@@ -1,19 +1,22 @@
 <div>
   <h1>Stock Exchange</h1>
   <button>Connect</button>
+  <span>Connected clients: {{data.clientCount}}</span>
 </div>
 <hr />
 <div>
   <input type="text" placeholder="Username"/>
-  <span>Cash: sus</span>
+  <span>Cash: xxxx</span>
 </div>
 <hr />
 <div>
   <select>
-    <option>Share</option>
+    <option *ngFor="let share of data.shares">{{share.name}}</option>
   </select>
   <input type="number"/>
   <button>Buy</button>
   <button>Sell</button>
 </div>
-<app-stock-chart></app-stock-chart>
+<app-stock-chart [dataSource]="historyData"></app-stock-chart>
+
+<app-log></app-log>

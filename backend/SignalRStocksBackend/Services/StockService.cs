@@ -12,4 +12,13 @@ public class StockService
         this.db = db;
     }
 
+    public IEnumerable<ShareDto> GetAllShares()
+    {
+        return db.Shares.Select(s => new ShareDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            UnitsInStock = s.UnitsInStock
+        });
+    }
 }

@@ -5,16 +5,20 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { StockChartComponent } from './components/stock-chart/stock-chart.component';
 import {NgChartsModule} from "ng2-charts";
+import { LogComponent } from './components/log/log.component';
+import {HttpClientModule} from "@angular/common/http";
 
 @NgModule({
   declarations: [
     AppComponent,
-    StockChartComponent
+    StockChartComponent,
+    LogComponent
   ],
     imports: [
         BrowserModule,
         AppRoutingModule,
-        NgChartsModule
+        NgChartsModule,
+        HttpClientModule
     ],
   providers: [],
   bootstrap: [AppComponent]

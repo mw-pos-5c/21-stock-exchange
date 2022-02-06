@@ -1,16 +1,16 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {HubConnection, HubConnectionBuilder, LogLevel} from '@microsoft/signalr';
+import {Subject} from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SignalrService {
 
-  private client: HubConnection;
+  client: HubConnection;
 
-  public on: (methodName: string, newMethod: (...args: any[]) => void) => void;
-  public send: (methodName: string, ...args: any[]) => Promise<void>;
-  public invoke: <T = any>(methodName: string, ...args: any[]) => Promise<T>;
+  private connectionReady = new Subject<void>();
+  private connected = false;
 
   constructor() {
     this.client = new HubConnectionBuilder()
@@ -19,11 +19,22 @@ export class SignalrService {
       .withAutomaticReconnect()
       .build();
 
-    this.on = this.client.on;
-    this.send = this.client.send;
-    this.invoke = this.client.invoke;
+    this.client.start().then(_ => {
+      this.connected = true;
+      this.connectionReady.complete();
+    });
+  }
 
-    this.client.start();
+  ready(ready: () => void) {
+    if (this.connected) ready();
+
+    const sub = this.connectionReady.subscribe({
+      complete: () => {
+        ready();
+        sub.unsubscribe();
+      }
+    });
+
   }
 
 

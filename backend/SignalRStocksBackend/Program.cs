@@ -5,8 +5,11 @@ using SignalRStocksBackend.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<StockTickerService>();
 builder.Services.AddSingleton<StockContext>();
+builder.Services.AddSingleton<StockService>();
+
+builder.Services.AddHostedService<StockTickerService>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();

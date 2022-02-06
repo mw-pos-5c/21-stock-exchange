@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import {ChartConfiguration, ChartType} from 'chart.js';
-import {BaseChartDirective} from "ng2-charts";
 import {SignalrService} from "../../services/signalr.service";
+import {BaseChartDirective} from "ng2-charts";
 
 @Component({
   selector: 'app-stock-chart',
@@ -10,32 +10,48 @@ import {SignalrService} from "../../services/signalr.service";
 })
 export class StockChartComponent implements OnInit {
 
-  constructor(private signal: SignalrService) { }
+
+
+  @Input() set dataSource(data: any) {
+    console.log("update", data);
+    const datasets = [];
+    for (let label in data.stock) {
+      datasets.push({
+        data: data.stock[label],
+        label: label,
+
+        fill: 'origin',
+      });
+    }
+
+    this.lineChartData.datasets = datasets;
+    this.lineChartData.labels = data.labels;
+    this.chart?.update();
+  }
+
+  @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
+
+  constructor(private signal: SignalrService) {
+  }
 
   ngOnInit(): void {
-    this.signal.on("NewStockData", args => {
-      console.log(args);
-    })
+
+    this.signal.ready(() => {
+
+
+
+    });
+
+
   }
 
   lineChartData: ChartConfiguration['data'] = {
-    datasets: [
-      {
-        data: [],
-        label: '',
-        backgroundColor: 'rgba(148,159,177,0.2)',
-        borderColor: 'rgba(148,159,177,1)',
-        pointBackgroundColor: 'rgba(148,159,177,1)',
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(148,159,177,0.8)',
-        fill: 'origin',
-      }
-    ],
+    datasets: [],
     labels: []
   };
 
   lineChartOptions: ChartConfiguration['options'] = {
+    animation: false,
     elements: {
       line: {
         tension: 0.5

@@ -1,88 +1,110 @@
-﻿using MathNet.Numerics.Interpolation;
+﻿#region usings
+
+using MathNet.Numerics.Interpolation;
+
 using Microsoft.AspNetCore.SignalR;
+
 using SignalRStocksBackend.DTOs;
 using SignalRStocksBackend.Entities;
 using SignalRStocksBackend.Hubs;
+
+#endregion
 
 // ** comment in when the Hub is ready
 // using SignalRStocksBackend.Hubs;
 
 namespace SignalRStocksBackend.Services;
 
-public class StockTickerService
+public class StockTickerService : IHostedService
 {
-    private readonly Random random = new();
-    // ** comment in when the Hub is ready
-    private readonly StockHub stockHub;  
+    #region Constants and Fields
+
     private readonly StockContext db;
-    private readonly Dictionary<string, List<Tuple<double, double>>> stockData = new();
+    private readonly Random random = new();
     private readonly Dictionary<string, CubicSpline> splines = new();
-    
+
+    private readonly Dictionary<string, List<Tuple<double, double>>> stockData = new();
+
+    // ** comment in when the Hub is ready
+
+    private readonly IHubContext<StockHub> stockHub;
+
+    #endregion
+
+    public StockTickerService(IHubContext<StockHub> stockHub, StockContext db)
+    {
+        this.stockHub = stockHub;
+        this.db = db;
+    }
+
+    public double MaxChangePercent { get; set; } = 5;
+    public int MaxInterpolationPoints { get; set; } = 40;
+    public double MaxWhiteNoisePercent { get; set; } = 1;
+    public int MinInterpolationPoints { get; set; } = 20;
 
     public int NrSplinePoints { get; set; } = 1000;
-    public int MinInterpolationPoints { get; set; } = 20;
-    public int MaxInterpolationPoints { get; set; } = 40;
-    public double MaxChangePercent { get; set; } = 5;
-    public double MaxWhiteNoisePercent { get; set; } = 1;
 
     public int TickSpeed { get; set; } = 1;
 
-    // ** comment in when the Hub is ready
-    public StockTickerService(StockHub stockHub, StockContext db)
+    private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        // ** comment in when the Hub is ready
-        this.stockHub = stockHub;
-        this.db = db;
         PrepareStockData();
-        PrintComparison("StockA");
-        Task.Run(() => StartStockTicker());
+
+        Task.Run(() => StartStockTicker(cancellationTokenSource.Token), cancellationToken);
+        return Task.CompletedTask;
     }
 
-    private void PrintComparison(string name)
+    public Task StopAsync(CancellationToken cancellationToken)
     {
-        Console.WriteLine("StockTickerService::PrintComparison for {name}");
-        var data = stockData[name];
-        var spline = splines[name];
-        foreach (var item in data)
-        {
-            double x = item.Item1;
-            double yReal = item.Item2;
-            double y = spline.Interpolate(x);
-            Console.WriteLine($"{x:0.0}/{name}: {y:0.0} / {yReal:0.0}");
-        }
-    }
-
-    private void PrepareStockData()
-    {
-        Console.WriteLine("StockTickerService::PrepareStockData");
-        var names = db.Shares.Select(x => x.Name).ToList();
-
-        InitializeStocksWithStartValue(db.Shares.OrderBy(x => x.Name).ToList());
-        PrepareTimelineForStocks(names);
-        PrepareSplines(names);
+        cancellationTokenSource.Cancel();
+        return Task.CompletedTask;
     }
 
     private void InitializeStocksWithStartValue(List<Share> shares)
     {
         Console.WriteLine($"StockTickerService::InitializeStocksWithStartValue for {shares.Count} stocks");
-        foreach (var share in shares)
+        foreach (Share share in shares)
         {
             stockData[share.Name] = new List<Tuple<double, double>>();
+
             //double startValue = random.NextDouble() * 100 + 100; //range [100,199]
             double startValue = share.StartPrice * (random.NextDouble() + 0.5); //range Course on 30.12. +/-50%
             stockData[share.Name].Add(new Tuple<double, double>(0, startValue));
         }
     }
 
+    private void PrepareSplines(List<string> names)
+    {
+        Console.WriteLine("StockTickerService::PrepareSplines");
+        foreach (string name in names)
+        {
+            double[] xValues = stockData[name].Select(x => x.Item1).ToArray();
+            double[] yValues = stockData[name].Select(x => x.Item2).ToArray();
+            splines[name] = CubicSpline.InterpolateAkimaSorted(xValues, yValues);
+        }
+    }
+
+    private void PrepareStockData()
+    {
+        Console.WriteLine("StockTickerService::PrepareStockData");
+        List<string> names = db.Shares.Select(x => x.Name).ToList();
+
+        InitializeStocksWithStartValue(db.Shares.OrderBy(x => x.Name).ToList());
+        PrepareTimelineForStocks(names);
+        PrepareSplines(names);
+    }
+
     private void PrepareTimelineForStocks(List<string> names)
     {
         Console.WriteLine($"StockTickerService::PrepareTimelineForStocks for {names.Count} stocks");
-        int nrValues = 100;
-        for (int i = 0; i < nrValues; i++)
+        var nrValues = 100;
+        for (var i = 0; i < nrValues; i++)
         {
-            foreach (var name in names)
+            foreach (string name in names)
             {
-                var points = stockData[name];
+                List<Tuple<double, double>> points = stockData[name];
                 double x = points.Last().Item1;
                 double y = points.Last().Item2;
                 int stepX = random.Next(MinInterpolationPoints, MaxInterpolationPoints);
@@ -96,35 +118,40 @@ public class StockTickerService
         }
     }
 
-    private void PrepareSplines(List<string> names)
+    private void PrintComparison(string name)
     {
-        Console.WriteLine("StockTickerService::PrepareSplines");
-        foreach (var name in names)
+        Console.WriteLine($"StockTickerService::PrintComparison for {name}");
+        List<Tuple<double, double>> data = stockData[name];
+        CubicSpline spline = splines[name];
+        foreach (Tuple<double, double> item in data)
         {
-            var xValues = stockData[name].Select(x => x.Item1).ToArray();
-            var yValues = stockData[name].Select(x => x.Item2).ToArray();
-            splines[name] = CubicSpline.InterpolateAkimaSorted(xValues, yValues);
+            double x = item.Item1;
+            double yReal = item.Item2;
+            double y = spline.Interpolate(x);
+            Console.WriteLine($"{x:0.0}/{name}: {y:0.0} / {yReal:0.0}");
         }
     }
 
-    private async void StartStockTicker()
+    private async Task StartStockTicker(CancellationToken cancellationToken)
     {
         double x = 0;
         double step = 1;
         double maxNoisePerc = MaxWhiteNoisePercent / 100;
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
             Console.WriteLine($"StockTickerService::StockTicker update stock exchange prices");
             var stocks = new List<ShareTickDto>();
-            foreach (var name in splines.Keys.OrderBy(x => x))
+            foreach (string name in splines.Keys.OrderBy(x => x))
             {
-                var spline = splines[name];
+                CubicSpline spline = splines[name];
                 double y = spline.Interpolate(x);
+
                 //var item = stockData[name].FirstOrDefault(p => p.Item1 == x);
                 //if (item != null) Console.WriteLine($"   {x:0.0}/{name}: {y:0.00} (real value)");
                 double noise = y * maxNoisePerc * (random.NextDouble() * 2 - 1);
                 y += noise;
                 if (y < 0.5) y = 0.5;
+
                 //Console.WriteLine($"   {x:0.0}/{name}: {y:0.00}");
                 stocks.Add(new ShareTickDto
                 {
@@ -132,18 +159,24 @@ public class StockTickerService
                     Val = y
                 });
             }
+
             Console.WriteLine($"StockService::SendNewStocks via Hub: {stocks.Count} stocks");
+
             // ** comment in when the Hub is ready
-            
+
             if (stockHub.Clients != null)
             {
-                await stockHub.Clients.All.NewStockData(stocks);
+                await stockHub.Clients.All.SendAsync("NewStockData", stocks);
             }
+
             x += step;
-            int delay = TickSpeed > 0 ? 2000 / TickSpeed : 2000;
-            await Task.Delay(delay);
+            int delay = TickSpeed > 0
+                ? 2000 / TickSpeed
+                : 2000;
+            await Task.Delay(delay, cancellationToken);
+            
         }
 
+        Console.WriteLine("Exiting graceful!");
     }
-
 }
