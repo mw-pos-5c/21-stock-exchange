@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "ProjectMap": {
+    "41b0a0be-d8b9-43e9-838e-9e2a09801416": {
+      "ProjectGuid": "41b0a0be-d8b9-43e9-838e-9e2a09801416",
+      "DisplayName": "SignalRStocksBackend",
+      "ColorIndex": 0
+    }
+  },
+  "NextColorIndex": 1
+}
