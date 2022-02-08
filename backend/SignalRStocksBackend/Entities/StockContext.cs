@@ -45,7 +45,7 @@ public class StockContext
         {
             Id = id++,
             Name = x,
-            StartPrice = coursesAndStock[x].Item1 * (random.NextDouble() + 0.5), //range Course on 30.12. +/-50%
+            Price = coursesAndStock[x].Item1 * (random.NextDouble() + 0.5), //range Course on 30.12. +/-50%
             UnitsInStock = (int)(coursesAndStock[x].Item2 * 1000) //are usually millions, set to thousands here
         }));
     }

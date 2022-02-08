@@ -30,4 +30,16 @@ public class StockController : ControllerBase
     {
         return stockService.GetAllShares();
     }
+
+    [HttpGet]
+    public IEnumerable<DepotDto> GetUserDepots(string name)
+    {
+        return stockService.GetUserDepots(name);
+    }
+    
+    [HttpGet]
+    public double GetUserCash(string name)
+    {
+        return stockService.GetUserCash(name);
+    }
 }

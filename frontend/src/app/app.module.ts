@@ -7,6 +7,7 @@ import { StockChartComponent } from './components/stock-chart/stock-chart.compon
 import {NgChartsModule} from "ng2-charts";
 import { LogComponent } from './components/log/log.component';
 import {HttpClientModule} from "@angular/common/http";
+import {FormsModule} from "@angular/forms";
 
 @NgModule({
   declarations: [
@@ -14,12 +15,13 @@ import {HttpClientModule} from "@angular/common/http";
     StockChartComponent,
     LogComponent
   ],
-    imports: [
-        BrowserModule,
-        AppRoutingModule,
-        NgChartsModule,
-        HttpClientModule
-    ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    NgChartsModule,
+    HttpClientModule,
+    FormsModule
+  ],
   providers: [],
   bootstrap: [AppComponent]
 })

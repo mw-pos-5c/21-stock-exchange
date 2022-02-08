@@ -70,7 +70,7 @@ public class StockTickerService : IHostedService
             stockData[share.Name] = new List<Tuple<double, double>>();
 
             //double startValue = random.NextDouble() * 100 + 100; //range [100,199]
-            double startValue = share.StartPrice * (random.NextDouble() + 0.5); //range Course on 30.12. +/-50%
+            double startValue = share.Price * (random.NextDouble() + 0.5); //range Course on 30.12. +/-50%
             stockData[share.Name].Add(new Tuple<double, double>(0, startValue));
         }
     }
@@ -162,6 +162,15 @@ public class StockTickerService : IHostedService
 
             Console.WriteLine($"StockService::SendNewStocks via Hub: {stocks.Count} stocks");
 
+            foreach (ShareTickDto stock in stocks)
+            {
+                Share? share = db.Shares.FirstOrDefault(s => s.Name.Equals(stock.Name));
+                if (share != null)
+                {
+                    share.Price = stock.Val;
+                }
+            }
+            db.SaveChanges();
             // ** comment in when the Hub is ready
 
             if (stockHub.Clients != null)

@@ -29,14 +29,10 @@ public class StockHub : Hub<IStockHub>
         Clients.All.ClientCountChanged(clientCount);
         return base.OnDisconnectedAsync(exception);
     }
-
-    public void BuyShare(TransactionDto transactionDto)
+    
+    public void AddTransaction(string username, string shareName, int amount, bool isBuy)
     {
-        Clients.All.TransactionReceived(transactionDto);
-    }
-
-    public void SellShare(TransactionDto transactionDto)
-    {
-        Clients.All.TransactionReceived(transactionDto);
+        TransactionDto? trans = stockService.AddTransaction(username, shareName, amount, isBuy);
+        Clients.All.TransactionReceived(trans);
     }
 }

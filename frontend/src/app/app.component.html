@@ -1,21 +1,39 @@
 <div>
   <h1>Stock Exchange</h1>
-  <button>Connect</button>
+  <button [disabled]="signal.connected" (click)="connect()">Connect</button>
   <span>Connected clients: {{data.clientCount}}</span>
 </div>
-<hr />
-<div>
-  <input type="text" placeholder="Username"/>
-  <span>Cash: xxxx</span>
+<hr/>
+<div *ngIf="signal.connected">
+  <input type="text" placeholder="Username" (change)="userNameChanged($event)"/>
+  <span>Cash: {{selectedUserMoney}}€</span>
+  <table>
+    <thead>
+    <tr>
+      <td>Share</td>
+      <td>Amount</td>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let share of selectedUserShares">
+      <td>
+         {{share.shareName}}
+      </td>
+      <td>
+        {{share.amount}}
+      </td>
+    </tr>
+    </tbody>
+  </table>
 </div>
-<hr />
-<div>
-  <select>
+<hr/>
+<div *ngIf="selectedUserName.length > 0">
+  <select [(ngModel)]="selectedShare">
     <option *ngFor="let share of data.shares">{{share.name}}</option>
   </select>
-  <input type="number"/>
-  <button>Buy</button>
-  <button>Sell</button>
+  <input #amountInput type="number"/>
+  <button (click)="addTransaction(+amountInput.value, true)">Buy</button>
+  <button (click)="addTransaction(+amountInput.value, false)">Sell</button>
 </div>
 <app-stock-chart [dataSource]="historyData"></app-stock-chart>
 

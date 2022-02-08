@@ -10,7 +10,7 @@ export class SignalrService {
   client: HubConnection;
 
   private connectionReady = new Subject<void>();
-  private connected = false;
+  public connected = false;
 
   constructor() {
     this.client = new HubConnectionBuilder()
@@ -18,11 +18,6 @@ export class SignalrService {
       .configureLogging(LogLevel.Debug)
       .withAutomaticReconnect()
       .build();
-
-    this.client.start().then(_ => {
-      this.connected = true;
-      this.connectionReady.complete();
-    });
   }
 
   ready(ready: () => void) {
@@ -37,5 +32,10 @@ export class SignalrService {
 
   }
 
-
+  connect() {
+    this.client.start().then(_ => {
+      this.connected = true;
+      this.connectionReady.complete();
+    });
+  }
 }
